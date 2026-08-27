@@ -1,0 +1,85 @@
+import cv2
+import csv
+import numpy as np
+from datetime import datetime
+import os
+
+# load face cascade classifier
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+# initialize video capture
+video_capture = cv2.VideoCapture(0)
+
+# student names (manually assign based on face detection)
+class_students_list_names = ["Aryal", "Newton", "Unknown"]
+
+# attendance tracking
+students_present = []
+attendance_marked = set()
+
+# get current date
+now = datetime.now()
+current_date = now.strftime("%Y-%m-%d")
+
+# create csv file
+csv_filename = f"{current_date}.csv"
+f = open(csv_filename, "w+", newline="")
+attendance_writer = csv.writer(f)
+attendance_writer.writerow(["Name", "Time", "Status"])
+
+print("Face Detection Attendance System")
+print("Press 'q' to quit")
+print("Press '1' for Aryal, '2' for Newton when face is detected")
+
+while True:
+    # capture frame
+    ret, frame = video_capture.read()
+    if not ret:
+        break
+    
+    # convert to grayscale for face detection
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    # detect faces
+    faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+    
+    # draw rectangles around faces
+    for (x, y, w, h) in faces:
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        cv2.putText(frame, "Face Detected - Press 1 or 2", (x, y-10), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+    
+    # display frame
+    cv2.imshow('Attendance System', frame)
+    
+    # handle key presses
+    key = cv2.waitKey(1) & 0xFF
+    
+    if key == ord('q'):
+        break
+    elif key == ord('1') and len(faces) > 0:  # Aryal
+        if "Aryal" not in attendance_marked:
+            current_time = datetime.now().strftime("%H:%M:%S")
+            attendance_writer.writerow(["Aryal", current_time, "Present"])
+            attendance_marked.add("Aryal")
+            print("Aryal marked present")
+            f.flush()
+    elif key == ord('2') and len(faces) > 0:  # Newton
+        if "Newton" not in attendance_marked:
+            current_time = datetime.now().strftime("%H:%M:%S")
+            attendance_writer.writerow(["Newton", current_time, "Present"])
+            attendance_marked.add("Newton")
+            print("Newton marked present")
+            f.flush()
+
+# cleanup
+video_capture.release()
+cv2.destroyAllWindows()
+f.close()
+
+print(f"Attendance saved to {csv_filename}")
+print(f"Students marked present: {list(attendance_marked)}")
+
+# Simple installation command
+print("\nTo install required packages:")
+print("pip install opencv-python")
